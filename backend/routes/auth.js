@@ -16,9 +16,10 @@ router.post(
     body("name").isLength({ min: 3 }),
   ],
   async (req, res) => {
+    let success = false;
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({ success,errors: errors.array() });
     }
     try {
       // Finding the unique User to remove duplicacy
@@ -26,7 +27,7 @@ router.post(
       if (user) {
         return res
           .status(400)
-          .json({ error: "Sorry a user with this email already exists" });
+          .json({success, error: "Sorry a user with this email already exists" });
       }
       // if user is not already registered then create a new user
       let salt = await bcrypt.genSaltSync(10);
@@ -47,8 +48,10 @@ router.post(
         },
       };
       const authtoken = jwt.sign(data, JWT_SECRET);
-      res.json({ authtoken });
+      success = true;
+      res.json({ success,authtoken });
     } catch (error) {
+      success = false;
       res.send(500).send("something went wrong");
     }
   }
@@ -62,8 +65,9 @@ router.post(
   ],
   async (req, res) => {
     const errors = validationResult(req);
+    let success = false;
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({ success,errors: errors.array() });
     }
     const { email, password } = req.body;
     try {
@@ -71,14 +75,14 @@ router.post(
       if (!user) {
         return res
           .status(400)
-          .json({ error: "Please try to login with correct credentials" });
+          .json({ success,error: "Please try to login with correct credentials" });
       }
       //main password comparision
       const passwordCompare = await bcrypt.compare(password, user.password);
       if (!passwordCompare) {
         return res
           .status(400)
-          .json({ error: "Please try to login with correct credentials" });
+          .json({ success,error: "Please try to login with correct credentials" });
       }
       const data = {
         user: {
@@ -86,7 +90,8 @@ router.post(
         },
       };
       const authtoken = jwt.sign(data, JWT_SECRET);
-      res.json({ authtoken });
+      success = true;
+      res.json({ success,authtoken });
     } catch (error) {
       console.log(error.message);
       res.status(500).send("Internal server error");
